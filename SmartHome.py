@@ -57,7 +57,14 @@ class SmartHome:
         Checks whether the infrared distance sensor on the ceiling detects something in front of it.
         :return: True if the infrared sensor detects something, False otherwise.
         """
-        pass
+        if GPIO.input(25) == 0:
+            return 1 #means someone in the room
+
+        if GPIO.input(25) == 3:
+            return 0 #means no one in the room
+
+        if GPIO.input(25) > 0 and GPIO.input(25) < 3:
+            return 0 #means no one in the room
 
     def manage_light_level(self) -> None:
         """
@@ -75,13 +82,25 @@ class SmartHome:
          the system turns on the smart light bulb as usual.
 
         """
-        pass
+
+        if self.check_room_occupancy() == 0:  # based on returns (0) it means no one in the room
+            GPIO.output(26, GPIO.LOW)
+            self.light_on = 0
+
+        if self.check_room_occupancy() == 1:  # based on returns (1) it means someone in the room
+            if self.measure_lux()<500:
+                GPIO.output(26, GPIO.HIGH) #in real life its opening the light bulb
+                self.light_on = 1  #its shows us to determine the situation
+            if self.measure_lux()>=500:
+                GPIO.output(26, GPIO.LOW)
+                self.light_on = 0
 
     def measure_lux(self) -> float:
         """
         Measure the amount of lux inside the room by querying the photoresistor
         """
-        pass
+        light_level = GPIO.input(27)
+        return light_level
 
     def manage_window(self) -> None:
         """
@@ -96,9 +115,17 @@ class SmartHome:
         temperature in the range of 18 to 30 degrees celsius. Otherwise, the window stays closed.
         """
         try:
-            # Your code goes here
-            # Remove the pass
-            pass
+            if 18 < self.dht_indoor <30 and 18 < self.dht_outdoor < 30:
+               if self.dht_outdoor - self.dht_indoor >= 2: # ındoor ıs lower
+                   self.servo.ChangeDutyCycle(12)
+                   self.window_open = True
+
+               if self.dht_indoor - self.dht_outdoor >= 2:
+                   self.servo.ChangeDutyCycle(2)
+                   self.window_open = False
+
+
+
         except RuntimeError as error:
             print(error.args[0])
             time.sleep(2)
@@ -119,4 +146,14 @@ class SmartHome:
         if the amount of detected gas is greater than or equal to 500 PPM,
         the system turns on the buzzer until the smoke level goes below the threshold of 500 PPM.
         """
-        pass
+
+        if GPIO.input(5) == 0:
+            GPIO.output(6,GPIO.HIGH)
+            self.buzzer_on = 1
+        if GPIO.input(5) == 1:
+            GPIO.output(6,GPIO.LOW)
+            self.buzzer_on = 0
+
+
+
+
